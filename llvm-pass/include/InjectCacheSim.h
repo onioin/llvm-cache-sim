@@ -12,8 +12,6 @@
 
 using namespace llvm;
 
-//TODO: rejig to work with old pass manager 
-
 namespace cachePlugin{
 
     enum EvictPol {
@@ -34,6 +32,8 @@ namespace cachePlugin{
 
     };
 
+    //wrapper for use with the old pass manager
+    //the codegen pipeline requires the old pass manager still
     struct CacheSimWrapper : llvm::ModulePass {
         static char ID;
 

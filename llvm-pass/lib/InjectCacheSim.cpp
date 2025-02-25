@@ -24,6 +24,8 @@ namespace cachePlugin{
 
     char CacheSimWrapper::ID = 0;
 
+    //when using opt, load the pass with -load and --load-pass-plugin
+    //-load allows the pass to access the command line options
 
     cl::opt<EvictPol> EvictPolicy("policy", cl::desc("Set the cache replacement policy:"),
                                   cl::values(
@@ -52,6 +54,7 @@ bool InjectCacheSim::instrument(llvm::Module &M,
     //auto &FAM = AM.getResult<FunctionAnalysisManagerModuleProxy>(M).getManager();
     auto FAM = AnalysisManager<llvm::Function>();
 
+    //declaration of the cache struct
     llvm::StructType *CacheTy =
             StructType::get(CTX,
                             {
@@ -66,7 +69,7 @@ bool InjectCacheSim::instrument(llvm::Module &M,
                                 PointerType::getUnqual(CTX)
                             });
 
-    //i64, cache ptr
+    //declaration of the operateCache function
     FunctionCallee CacheOperate =
             M.getOrInsertFunction("operateCache",
                                   FunctionType::get(
@@ -75,7 +78,7 @@ bool InjectCacheSim::instrument(llvm::Module &M,
                                            PointerType::getUnqual(CacheTy)},
                                            false));
 
-    //cache ptr, int, int, int, int, char ptr
+    //declaration of the cacheSetup function
     FunctionCallee CacheCreate =
             M.getOrInsertFunction("cacheSetup",
                                   FunctionType::get(
@@ -90,7 +93,7 @@ bool InjectCacheSim::instrument(llvm::Module &M,
                                                       IntegerType::getInt8Ty(CTX)
                                               )},
                                               false));
-    //cache ptr
+    //declaration of the cacheDeallocate function
     FunctionCallee CacheDelete =
             M.getOrInsertFunction("cacheDeallocate",
                                   FunctionType::get(
@@ -100,12 +103,13 @@ bool InjectCacheSim::instrument(llvm::Module &M,
                                   },
                                   false));
 
+    //declaration of the safe exit function, deallocates the cache and prints the result
     FunctionCallee SE =
             M.getOrInsertFunction("cacheExit",
                                   FunctionType::get(
                                           Type::getVoidTy(CTX),
                                           false));
-
+    //stdlib function atexit()
     FunctionCallee AtExit =
             M.getOrInsertFunction("atexit",
                                   FunctionType::get(
@@ -116,6 +120,7 @@ bool InjectCacheSim::instrument(llvm::Module &M,
     AE->addFnAttr(Attribute::NoUnwind);
     AE->addParamAttr(0, Attribute::NoUndef);
 
+    //inject global variables for cache and cache name
     llvm::Constant *CachePtr = M.getOrInsertGlobal("cache_", PointerType::getUnqual(CacheTy));
     dyn_cast<GlobalVariable>(CachePtr)->setInitializer(ConstantPointerNull::get(
             PointerType::getUnqual(CacheTy)));
@@ -160,9 +165,11 @@ bool InjectCacheSim::instrument(llvm::Module &M,
 
     for (auto &F: M) {
         if (F.isDeclaration()) {
+            //declarations have no instructions
             continue;
         }
 
+        //get all memory related instructions (loads and stores)
         //auto &ops = FAM.getResult<FindMemCall>(F);
         auto ops = (new FindMemCall())->run(F, FAM);
         IRBuilder<> Builder(&*F.getEntryBlock().getFirstInsertionPt());
@@ -172,6 +179,8 @@ bool InjectCacheSim::instrument(llvm::Module &M,
         }
 
         for (llvm::Instruction *Inst: ops) {
+            //per instruction, cast the pointer to i64
+            //inject cache operation
             if (auto *LD = dyn_cast<LoadInst>(Inst)) {
                 Builder.SetInsertPoint(Inst);
                 auto* ptrCast = Builder.CreatePtrToInt(LD->getPointerOperand(),
@@ -215,6 +224,7 @@ bool InjectCacheSim::instrument(llvm::Module &M,
 
 }
 
+//register with the new pass manager
 llvm::PassPluginLibraryInfo getInjectCacheSimPluginInfo(){
     return {LLVM_PLUGIN_API_VERSION, "inject-cache-sim", LLVM_VERSION_STRING,
             [](PassBuilder &PB){
