@@ -1,0 +1,8 @@
+
+#ifndef CACHESIM_CONFIG_H
+#define CACHESIM_CONFIG_H
+
+#define RUNTIME_LIB "cache-sim"
+#cmakedefine CMAKE_TEMP_LIBRARY_PATH "@CMAKE_TEMP_LIBRARY_PATH@"
+
+#endif
