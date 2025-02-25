@@ -104,6 +104,7 @@ int main(int argc, char **argv) {
     llvm::sys::path::remove_filename(invocation);
     if(!invocation.empty()){
         LibPaths.push_back(invocation.str().str());
+        //this is where the library will be if built correctly
         LibPaths.push_back(invocation.str().str() + "/../cache-sim");
     }
 
