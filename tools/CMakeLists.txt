@@ -2,7 +2,7 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake"
         "${CMAKE_CURRENT_BINARY_DIR}/config.h" @ONLY)
 
 add_executable(inject-cache-sim
-        main.cpp)
+        inject.cpp)
 
 target_include_directories(inject-cache-sim
         PRIVATE
