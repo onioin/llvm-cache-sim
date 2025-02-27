@@ -4,6 +4,8 @@
 #include <string.h>
 #include <getopt.h>
 
+//this is not a test of the pass, rather a test of the cache simulator to ensure it is acting correctly
+
 extern "C" {
 
 enum EvictPol {
