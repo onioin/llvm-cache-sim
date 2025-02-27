@@ -6,7 +6,9 @@ To build, run
 
 ```commandline
 export LLVM_DIR={install directory for llvm}
-cmake -DLT_LLVM_INSTALL_DIR=$LLVM_DIR -S{project source directory}
+cmake -DLT_LLVM_INSTALL_DIR=$LLVM_DIR -B{build directory} -S{project source directory}
+cd {build directory}
+make
 ```
 
 ## Running
