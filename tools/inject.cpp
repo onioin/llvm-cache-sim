@@ -62,6 +62,9 @@ cl::opt<std::string> OutFile("o", cl::desc("Output filename"),
                              cl::value_desc("filename"), cl::Required,
                              cl::init(""), cl::cat(cachePlugin::optionCategory));
 
+cl::opt<char> OptLevel("O", cl::desc("Clang optimization level [-O0, -O1, -O2(default), -O3]"),
+                      cl::init('2'), cl::Prefix, cl::cat(cachePlugin::optionCategory));
+
 cl::list<std::string> LibPaths("L", cl::Prefix,
                                cl::desc("Specify library search paths"),
                                cl::value_desc("directory"), cl::cat(cachePlugin::optionCategory));
@@ -131,6 +134,16 @@ void compile(Module &M, StringRef outPath){
         report_fatal_error(Twine("Unable to find target:\n" + err));
     }
 
+    CodeGenOptLevel lvl = CodeGenOptLevel::Default;
+
+    switch (OptLevel) {
+        default: report_fatal_error("Invalid optimization level.\n");
+        case '0': lvl = CodeGenOptLevel::None; break;
+        case '1': lvl = CodeGenOptLevel::Less; break;
+        case '2': lvl = CodeGenOptLevel::Default; break;
+        case '3': lvl = CodeGenOptLevel::Aggressive; break;
+    }
+
     TargetOptions opts = llvm::codegen::InitTargetOptionsFromCodeGenFlags(triple);
     auto relocModel = llvm::codegen::getExplicitRelocModel();
     auto codeModel = llvm::codegen::getExplicitCodeModel();
@@ -145,7 +158,7 @@ void compile(Module &M, StringRef outPath){
                                         opts,
                                         relocModel,
                                         codeModel,
-                                        CodeGenOptLevel::Default));
+                                        lvl));
     assert(machine && "No target machine :(");
 
     if(llvm::codegen::getFloatABIForCalls() != FloatABI::Default){
@@ -185,7 +198,7 @@ void compile(Module &M, StringRef outPath){
 
 void link(StringRef objFile, StringRef outFile){
     auto clang = llvm::sys::findProgramByName("clang++");
-    std::string opt("-O2");
+    std::string opt("-O" + OptLevel);
     if(!clang){
         report_fatal_error("No clang :(");
     }
