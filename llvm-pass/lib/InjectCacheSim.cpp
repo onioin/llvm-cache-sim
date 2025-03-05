@@ -36,11 +36,14 @@ namespace cachePlugin{
                                   cl::Required,
                                   cl::cat(cachePlugin::optionCategory));
     cl::opt<int> SetBits("s", cl::desc("Number of bits used for set index (number of sets is 2^s)"),
-                         cl::value_desc("num"), cl::Required, cl::cat(cachePlugin::optionCategory));
+                         cl::value_desc("num"), cl::Required, cl::cat(cachePlugin::optionCategory),
+                         cl::Prefix);
     cl::opt<int> LinesPer("E", cl::desc("Number of lines per set (associativity/number of ways)"),
-                          cl::value_desc("num"), cl::Required, cl::cat(cachePlugin::optionCategory));
+                          cl::value_desc("num"), cl::Required, cl::cat(cachePlugin::optionCategory),
+                          cl::Prefix);
     cl::opt<int> BlockBits("b", cl::desc("Number of bits used for byte offset (block size is 2^b bytes)"),
-                           cl::value_desc("num"), cl::Required, cl::cat(cachePlugin::optionCategory));
+                           cl::value_desc("num"), cl::Required, cl::cat(cachePlugin::optionCategory),
+                           cl::Prefix);
     cl::opt<std::string> CacheName("name", cl::desc("Name of the cache (optional)"), cl::init("L1"),
                                    cl::cat(cachePlugin::optionCategory));
     cl::alias CacheNameA("n", cl::desc("Alias for -name"), cl::aliasopt(CacheName),
