@@ -1,3 +1,5 @@
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -fPIC")
+
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake"
         "${CMAKE_CURRENT_BINARY_DIR}/config.h" @ONLY)
 
@@ -19,3 +21,19 @@ target_link_libraries(inject-cache-sim
         InjectCacheSim
         FindMemCall
         ${REQ_LLVM_LIBRARIES})
+
+add_executable(multiple-inject
+        multiple-inject.cpp)
+
+target_link_libraries(multiple-inject
+        PRIVATE
+        LLVMSupport)
+
+target_link_libraries(multiple-inject
+        INTERFACE
+        LLVMSupport)
+
+target_include_directories(multiple-inject
+        PRIVATE
+        "./include")
+
