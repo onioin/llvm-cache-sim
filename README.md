@@ -38,6 +38,7 @@ Cache Options
 
 Tool Options
 -o <filename>    - Output filename
+-O <level>       - Clang optimization level (default -O2)
 -l <library>     - Specify libraries to link against
 -L <directory>   - Specify library search paths
 ```
