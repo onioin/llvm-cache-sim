@@ -63,7 +63,9 @@ cl::opt<std::string> OutFile("o", cl::desc("Output filename"),
                              cl::init(""), cl::cat(cachePlugin::optionCategory));
 
 cl::opt<char> OptLevel("O", cl::desc("Clang optimization level [-O0, -O1, -O2(default), -O3]"),
-                      cl::init('2'), cl::Prefix, cl::cat(cachePlugin::optionCategory));
+                      cl::init('2'), cl::Prefix,
+                      cl::value_desc("level"),
+                      cl::cat(cachePlugin::optionCategory));
 
 cl::list<std::string> LibPaths("L", cl::Prefix,
                                cl::desc("Specify library search paths"),
