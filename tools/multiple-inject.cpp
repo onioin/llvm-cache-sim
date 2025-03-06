@@ -1,5 +1,5 @@
 
-//#include "llvm/Support/Program.h"
+#include "llvm/Support/Program.h"
 #include "llvm/Support/CommandLine.h"
 
 #include "CFGParser.h"
@@ -46,10 +46,12 @@ cl::list<std::string> LibNames("l", cl::Prefix,
                                cl::desc("Specify libraries to link against"),
                                cl::value_desc("library"), cl::cat(optCat));
 
-cl::list<CFG_t> ConfigFiles("c",
+cl::list<CCFG_t> ConfigFiles("c", cl::value_desc("cfg filename"),
+                            cl::desc("A cache config file to be run"),
                             cl::cat(optCat));
 
-cl::opt<CFG_t> ConfigFile("C",
+cl::opt<CCFG_t> ConfigFile("C", cl::value_desc("cfg filename"),
+                          cl::desc("A single file containing a list of configs to be run"),
                           cl::cat(optCat));
 
 int main(int argc, char** argv){
