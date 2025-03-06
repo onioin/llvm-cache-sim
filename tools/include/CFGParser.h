@@ -48,7 +48,52 @@ bool parseCCFGList(){
     return false;
 }
 
-bool parseCCFG(){
+//TODO: good error messages
+bool parseCCFG(llvm::cl::Option &O, llvm::StringRef Arg, CCFG_t &V){
+    char* cfg_buf = readfile(Arg.str().c_str());
+    json_parse_result_t result;
+    json_value_t* json_root =
+            json_parse_ex(cfg_buf, strlen(cfg_buf), json_parse_flags_allow_simplified_json,
+                          NULL, NULL, result);
+    if(result.error){
+        //TODO: parse the error
+        return O.error();
+    }
+    if(json_type_object != json_root->type){
+        return O.error();
+    }
+    json_object_t* object = json_root->payload;
+    if(5 != object->length){
+        return O.error();
+    }
+    auto* curr = object->start;
+
+    while(NULL != curr){
+        auto* name = curr->name;
+        auto* val = curr->value;
+
+        switch(val->type){
+            case json_type_string:
+                val = json_value_as_string(val);
+                if(!val){
+                    return O.error();
+                }
+                break;
+            case json_type_number:
+                val = json_value_as_number(val);
+                if(!val){
+                    return O.error();
+                }
+                break;
+            default:
+                return O.error();
+        }
+
+        curr = curr->next;
+    }
+
+    free(cfg_buf);
+    free(json_root);
     return false;
 }
 
