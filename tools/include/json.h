@@ -39,7 +39,8 @@
 /* disable warning: no function prototype given: converting '()' to '(void)' */
 #pragma warning(disable : 4255)
 
-/* disable warning: '__cplusplus' is not defined as a preprocessor macro, replacing with '0' for '#if/#elif' */
+/* disable warning: '__cplusplus' is not defined as a preprocessor macro,
+ * replacing with '0' for '#if/#elif' */
 #pragma warning(disable : 4668)
 
 /* disable warning: 'bytes padding added after construct' */
@@ -49,12 +50,18 @@
 #include <stddef.h>
 #include <string.h>
 
-#if defined(_MSC_VER)
-#define json_weak __inline
-#elif defined(__clang__) || defined(__GNUC__)
-#define json_weak __attribute__((weak))
+#if defined(__TINYC__)
+#define JSON_ATTRIBUTE(a) __attribute((a))
 #else
-#error Non clang, non gcc, non MSVC compiler found!
+#define JSON_ATTRIBUTE(a) __attribute__((a))
+#endif
+
+#if defined(_MSC_VER) || defined(__WATCOMC__)
+#define json_weak __inline
+#elif defined(__clang__) || defined(__GNUC__) || defined(__TINYC__)
+#define json_weak JSON_ATTRIBUTE(weak)
+#else
+#error Non clang, non gcc, non MSVC, non tcc, non WATCOM compiler found!
 #endif
 
 #ifdef __cplusplus
@@ -218,7 +225,7 @@ json_weak int json_value_is_false(const struct json_value_s *const value);
 json_weak int json_value_is_null(const struct json_value_s *const value);
 
 /* The various types JSON values can be. Used to identify what a value is. */
-enum json_type_e {
+typedef enum json_type_e {
     json_type_string,
     json_type_number,
     json_type_object,
@@ -226,18 +233,20 @@ enum json_type_e {
     json_type_true,
     json_type_false,
     json_type_null
-};
+
+} json_type_t;
 
 /* A JSON string value. */
-struct json_string_s {
+typedef struct json_string_s {
     /* utf-8 string */
     const char *string;
     /* The size (in bytes) of the string */
     size_t string_size;
-};
+
+} json_string_t;
 
 /* A JSON string value (extended). */
-struct json_string_ex_s {
+typedef struct json_string_ex_s {
     /* The JSON string this extends. */
     struct json_string_s string;
 
@@ -249,52 +258,58 @@ struct json_string_ex_s {
 
     /* The row number for the value in the JSON input, in bytes. */
     size_t row_no;
-};
+
+} json_string_ex_t;
 
 /* A JSON number value. */
-struct json_number_s {
+typedef struct json_number_s {
     /* ASCII string containing representation of the number. */
     const char *number;
     /* the size (in bytes) of the number. */
     size_t number_size;
-};
+
+} json_number_t;
 
 /* an element of a JSON object. */
-struct json_object_element_s {
+typedef struct json_object_element_s {
     /* the name of this element. */
     struct json_string_s *name;
     /* the value of this element. */
     struct json_value_s *value;
     /* the next object element (can be NULL if the last element in the object). */
     struct json_object_element_s *next;
-};
+
+} json_object_element_t;
 
 /* a JSON object value. */
-struct json_object_s {
+typedef struct json_object_s {
     /* a linked list of the elements in the object. */
     struct json_object_element_s *start;
     /* the number of elements in the object. */
     size_t length;
-};
+
+} json_object_t;
 
 /* an element of a JSON array. */
-struct json_array_element_s {
+typedef struct json_array_element_s {
     /* the value of this element. */
     struct json_value_s *value;
     /* the next array element (can be NULL if the last element in the array). */
     struct json_array_element_s *next;
-};
+
+} json_array_element_t;
 
 /* a JSON array value. */
-struct json_array_s {
+typedef struct json_array_s {
     /* a linked list of the elements in the array. */
     struct json_array_element_s *start;
     /* the number of elements in the array. */
     size_t length;
-};
+
+} json_array_t;
 
 /* a JSON value. */
-struct json_value_s {
+typedef struct json_value_s {
     /* a pointer to either a json_string_s, json_number_s, json_object_s, or. */
     /* json_array_s. Should be cast to the appropriate struct type based on what.
      */
@@ -304,10 +319,11 @@ struct json_value_s {
      */
     /* json_type_null, payload will be NULL. */
     size_t type;
-};
+
+} json_value_t;
 
 /* a JSON value (extended). */
-struct json_value_ex_s {
+typedef struct json_value_ex_s {
     /* the JSON value this extends. */
     struct json_value_s value;
 
@@ -319,7 +335,8 @@ struct json_value_ex_s {
 
     /* the row number for the value in the JSON input, in bytes. */
     size_t row_no;
-};
+
+} json_value_ex_t;
 
 /* a parsing error code. */
 enum json_parse_error_e {
@@ -355,8 +372,7 @@ enum json_parse_error_e {
     json_parse_error_allocator_failed,
 
     /* the JSON input had unexpected trailing characters that weren't part of the.
-     */
-    /* JSON value. */
+       JSON value. */
     json_parse_error_unexpected_trailing_characters,
 
     /* catch-all error for everything else that exploded (real bad chi!). */
@@ -364,7 +380,7 @@ enum json_parse_error_e {
 };
 
 /* error report from json_parse_ex(). */
-struct json_parse_result_s {
+typedef struct json_parse_result_s {
     /* the error code (one of json_parse_error_e). */
     size_t error;
 
@@ -376,7 +392,8 @@ struct json_parse_result_s {
 
     /* the row number for the error, in bytes. */
     size_t error_row_no;
-};
+
+} json_parse_result_t;
 
 #ifdef __cplusplus
 } /* extern "C". */
@@ -424,6 +441,11 @@ struct json_parse_result_s {
 /* Who cares if nullptr doesn't work with C++98, we don't use it there! */
 #pragma clang diagnostic ignored "-Wc++98-compat"
 #pragma clang diagnostic ignored "-Wc++98-compat-pedantic"
+
+#if __has_warning("-Wunsafe-buffer-usage")
+#pragma clang diagnostic ignored "-Wunsafe-buffer-usage"
+#endif
+
 #elif defined(_MSC_VER)
 #pragma warning(push)
 
@@ -500,6 +522,10 @@ int json_skip_whitespace(struct json_parse_state_s *state) {
     const size_t size = state->size;
     const char *const src = state->src;
 
+    if (offset >= state->size) {
+        return 0;
+    }
+
     /* the only valid whitespace according to ECMA-404 is ' ', '\n', '\r' and
      * '\t'. */
     switch (src[offset]) {
@@ -538,28 +564,33 @@ int json_skip_whitespace(struct json_parse_state_s *state) {
 
 json_weak int json_skip_c_style_comments(struct json_parse_state_s *state);
 int json_skip_c_style_comments(struct json_parse_state_s *state) {
-    /* do we have a comment?. */
+    /* to have a C-style comment we need at least 2 characters of space */
+    if ((state->offset + 2) > state->size) {
+        return 0;
+    }
+
+    /* do we have a comment? */
     if ('/' == state->src[state->offset]) {
-        /* skip '/'. */
-        state->offset++;
+        if ('/' == state->src[state->offset + 1]) {
+            /* we had a comment of the form // */
 
-        if ('/' == state->src[state->offset]) {
-            /* we had a comment of the form //. */
+            /* skip first '/' */
+            state->offset++;
 
-            /* skip second '/'. */
+            /* skip second '/' */
             state->offset++;
 
             while (state->offset < state->size) {
                 switch (state->src[state->offset]) {
                     default:
-                        /* skip the character in the comment. */
+                        /* skip the character in the comment */
                         state->offset++;
                         break;
                     case '\n':
-                        /* if we have a newline, our comment has ended! Skip the newline. */
+                        /* if we have a newline, our comment has ended! Skip the newline */
                         state->offset++;
 
-                        /* we entered a newline, so move our line info forward. */
+                        /* we entered a newline, so move our line info forward */
                         state->line_no++;
                         state->line_offset = state->offset;
                         return 1;
@@ -568,10 +599,13 @@ int json_skip_c_style_comments(struct json_parse_state_s *state) {
 
             /* we reached the end of the JSON file! */
             return 1;
-        } else if ('*' == state->src[state->offset]) {
-            /* we had a comment in the C-style long form. */
+        } else if ('*' == state->src[state->offset + 1]) {
+            /* we had a comment in the C-style long form */
 
-            /* skip '*'. */
+            /* skip '/' */
+            state->offset++;
+
+            /* skip '*' */
             state->offset++;
 
             while (state->offset + 1 < state->size) {
@@ -581,16 +615,16 @@ int json_skip_c_style_comments(struct json_parse_state_s *state) {
                     state->offset += 2;
                     return 1;
                 } else if ('\n' == state->src[state->offset]) {
-                    /* we entered a newline, so move our line info forward. */
+                    /* we entered a newline, so move our line info forward */
                     state->line_no++;
                     state->line_offset = state->offset;
                 }
 
-                /* skip character within comment. */
+                /* skip character within comment */
                 state->offset++;
             }
 
-            /* Comment wasn't ended correctly which is a failure. */
+            /* comment wasn't ended correctly which is a failure */
             return 1;
         }
     }
@@ -620,7 +654,7 @@ int json_skip_all_skippables(struct json_parse_state_s *state) {
 
             /* This should really be checked on access, not in front of every call.
              */
-            if (state->offset == size) {
+            if (state->offset >= size) {
                 state->error = json_parse_error_premature_end_of_buffer;
                 return 1;
             }
@@ -945,7 +979,7 @@ int json_get_object_size(struct json_parse_state_s *state,
             }
         }
 
-        /* if we parsed at least once element previously, grok for a comma. */
+        /* if we parsed at least one element previously, grok for a comma. */
         if (allow_comma) {
             if (',' == src[state->offset]) {
                 /* skip comma. */
@@ -1172,6 +1206,31 @@ int json_get_number_size(struct json_parse_state_s *state) {
                     inf_or_nan = 1;
                 }
             }
+
+            if (inf_or_nan) {
+                if (offset < size) {
+                    switch (src[offset]) {
+                        default:
+                            break;
+                        case '0':
+                        case '1':
+                        case '2':
+                        case '3':
+                        case '4':
+                        case '5':
+                        case '6':
+                        case '7':
+                        case '8':
+                        case '9':
+                        case 'e':
+                        case 'E':
+                            /* cannot follow an inf or nan with digits! */
+                            state->error = json_parse_error_invalid_number_format;
+                            state->offset = offset;
+                            return 1;
+                    }
+                }
+            }
         }
 
         if (found_sign && !inf_or_nan && (offset < size) &&
@@ -1215,7 +1274,7 @@ int json_get_number_size(struct json_parse_state_s *state) {
         if ((offset < size) && ('.' == src[offset])) {
             offset++;
 
-            if (!('0' <= src[offset] && src[offset] <= '9')) {
+            if ((offset >= size) || !('0' <= src[offset] && src[offset] <= '9')) {
                 if (!(json_parse_flags_allow_leading_or_trailing_decimal_point &
                       flags_bitset) ||
                     !had_leading_digits) {
