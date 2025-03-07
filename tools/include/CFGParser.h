@@ -13,6 +13,10 @@
 #include <string>
 #include <iostream>
 
+//TODO: lift policy enum out of this file
+enum EvictPol {
+    lfu = 0, lru = 1, fifo = 2, rnd = 3
+};
 
 typedef struct CCFG {
     uint8_t s;
@@ -90,8 +94,8 @@ bool parseCCFG(llvm::cl::Option &O, llvm::StringRef Arg, CCFG_t &V){
         }
         return O.error("An error occurred while parsing the JSON: \n"
                        "    " + err + "\n");
-
     }
+
     if(json_type_object != json_root->type){
         return O.error("Top level of the parsed JSON should be an object\n");
     }
@@ -112,6 +116,14 @@ bool parseCCFG(llvm::cl::Option &O, llvm::StringRef Arg, CCFG_t &V){
                 val = (void*) json_value_as_string((json_value_t*) val);
                 if(!val){
                     return O.error("An unexpected error occurred while parsing\n");
+                }
+                if(!strcmp(tolower(name->string), "name")){
+                    V.name = malloc(((json_string_t*) val)->string_size);
+                    memcpy(V.name, ((json_string_t*) val)->string,
+                           ((json_string_t*) val)->string_size);
+                }
+                if(!strcmp(tolower(name->string), "policy")){
+
                 }
                 break;
             case json_type_number:
