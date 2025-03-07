@@ -48,6 +48,8 @@ bool llvm::cl::parser<CCFG_t>::parse(llvm::cl::Option &O, llvm::StringRef ArgNam
     return false;
 }
 
+uint8_t policyParse(const char* policy);
+
 bool parseCCFGList(){
     return false;
 }
@@ -121,11 +123,16 @@ bool parseCCFG(llvm::cl::Option &O, llvm::StringRef Arg, CCFG_t &V){
                     V.name = malloc(((json_string_t*) val)->string_size);
                     memcpy(V.name, ((json_string_t*) val)->string,
                            ((json_string_t*) val)->string_size);
+                    break;
                 }
                 if(!strcmp(tolower(name->string), "policy")){
-
+                    V.pol = policyParse(((json_string_t*) val)->string);
+                    if(255 == V.pol){
+                        return O.error("An invalid cache replacement policy was entered\n");
+                    }
+                    break;
                 }
-                break;
+                return O.error("An unexpected name/value pair of type string was encountered\n");
             case json_type_number:
                 val = (void*) json_value_as_number((json_value_t*) val);
                 if(!val){
@@ -133,7 +140,7 @@ bool parseCCFG(llvm::cl::Option &O, llvm::StringRef Arg, CCFG_t &V){
                 }
                 break;
             default:
-                return O.error("An invalid data type was encountered");
+                return O.error("An invalid data type was encountered\n");
         }
 
         curr = curr->next;
@@ -153,6 +160,22 @@ void llvm::cl::parser<CCFG_t>::printOptionDiff(const llvm::cl::Option &O, CCFG_t
 
     outs() << "= " << Str << "\n";
 
+}
+
+uint8_t policyParse(const char* policy){
+    if(!strcmp(tolower(policy), "lfu")){
+        return lfu;
+    }
+    if(!strcmp(tolower(policy), "lru")){
+        return lru;
+    }
+    if(!strcmp(tolower(policy), "fifo")){
+        return fifo;
+    }
+    if(!strcmp(tolower(policy), "rand") || !strcmp(tolower(policy), "random")){
+        return rnd;
+    }
+    return 255;
 }
 
 #endif //CACHEPASS_CFGPARSER_H
