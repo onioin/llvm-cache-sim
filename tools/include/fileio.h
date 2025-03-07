@@ -1,7 +1,7 @@
 #ifndef FILE_IO_H
 #define FILE_IO_H
 /* Read file into a character buffer */
-char *readfile(char *filename) {
+char *readfile(const char *filename) {
     char *source;
     FILE *fp = fopen(filename, "r");
     if (fp == NULL) { /* Error */
