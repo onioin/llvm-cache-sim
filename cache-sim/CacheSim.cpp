@@ -6,7 +6,7 @@ extern "C" {
 #include <stdio.h>
 #include <assert.h>
 
-
+//TODO: lift policy enum out of this file
 #define LEAST_FREQUENT      0
 #define LEAST_RECENT        1
 #define FIFO                2

@@ -14,6 +14,7 @@ using namespace llvm;
 
 namespace cachePlugin{
 
+    //TODO: lift policy enum out of this file
     enum EvictPol {
         lfu = 0, lru = 1, fifo = 2, rnd = 3
     };
