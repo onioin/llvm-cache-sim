@@ -11,7 +11,9 @@
 #include "fileio.h"
 
 #include <string>
-#include <iostream>
+#include <sstream>
+//#include <iostream>
+#include <stdlib.h>
 
 //TODO: lift policy enum out of this file
 enum EvictPol {
@@ -25,6 +27,8 @@ typedef struct CCFG {
     uint8_t pol;
     char* name;
 } CCFG_t;
+
+bool parseCCFG(llvm::cl::Option &O, llvm::StringRef Arg, CCFG_t &V);
 
 template <> class llvm::cl::parser<CCFG_t> : public basic_parser<CCFG_t>{
 public:
@@ -45,7 +49,7 @@ public:
 bool llvm::cl::parser<CCFG_t>::parse(llvm::cl::Option &O, llvm::StringRef ArgName,
                                     llvm::StringRef Arg, CCFG_t &V){
     std::cout << ArgName.str() << ": " << Arg.str() << std::endl;
-    return false;
+    return parseCCFG(O, Arg, V);
 }
 
 uint8_t policyParse(const char* policy);
@@ -56,56 +60,70 @@ bool parseCCFGList(){
 
 bool parseCCFG(llvm::cl::Option &O, llvm::StringRef Arg, CCFG_t &V){
     char* cfg_buf = readfile(Arg.str().c_str());
-    json_parse_result_t* result;
+    auto* result = (json_parse_result_t*) malloc(sizeof(json_parse_result_t));
     json_value_t* json_root =
             json_parse_ex(cfg_buf, strlen(cfg_buf), json_parse_flags_allow_simplified_json,
                           NULL, NULL, result);
     if(json_parse_error_none != result->error){
-        std::string err;
+        std::stringstream err;
+        err << "An error occurred while parsing the JSON:\n\t";
         switch(result->error){
             case json_parse_error_expected_comma_or_closing_bracket:
-                err.assign("Expected a comma or a closing '}' or ']' in file: " + Arg.str() +
-                " at " + result->error_line_no + ":" + result->error_row_no);
+                err << "Expected a comma or a closing '}' or ']' in file: " << Arg.str() <<
+                " at " << result->error_line_no << ":" << result->error_row_no;
+                break;
             case json_parse_error_expected_colon:
-                err.assign("Expected a colon to separate a name/value pair in file: " + Arg.str() +
-                " at " + result->error_line_no + ":" + result->error_row_no);
+                err << "Expected a colon to separate a name/value pair in file: " << Arg.str() <<
+                " at " << result->error_line_no << ":" << result->error_row_no;
+                break;
             case json_parse_error_expected_opening_quote:
-                err.assign("Expected string to begin with '\"' in file: " + Arg.str() +
-                " at " + result->error_line_no + ":" + result->error_row_no);
+                err << "Expected string to begin with '\"' in file: " << Arg.str() <<
+                " at " << result->error_line_no << ":" << result->error_row_no;
+                break;
             case json_parse_error_invalid_string_escape_sequence:
-                err.assign("Invalid escape sequence in file: " + Arg.str() +
-                " at " + result->error_line_no + ":" + result->error_row_no);
+                err << "Invalid escape sequence in file: " << Arg.str() <<
+                " at " << result->error_line_no << ":" << result->error_row_no;
+                break;
             case json_parse_error_invalid_number_format:
-                err.assign("Invalid number format in file: " + Arg.str() +
-                " at " + result->error_line_no + ":" + result->error_row_no);
+                err << "Invalid number format in file: " << Arg.str() <<
+                " at " << result->error_line_no << ":" << result->error_row_no;
+                break;
             case json_parse_error_invalid_value:
-                err.assign("Invalid value in file: " + Arg.str() +
-                " at " + result->error_line_no + ":" + result->error_row_no);
+                err << "Invalid value in file: " << Arg.str() <<
+                " at " << result->error_line_no << ":" << result->error_row_no;
+                break;
             case json_parse_error_premature_end_of_buffer:
-                err.assign("File: " + Arg.str() + " ended before expected");
+                err << "File: " << Arg.str() << " ended before expected";
+                break;
             case json_parse_error_invalid_string:
-                err.assign("Malformed string in file: " + Arg.str() +
-                " at " + result->error_line_no + ":" + result->error_row_no);
+                err << "Malformed string in file: " + Arg.str() << Arg.str() <<
+                " at " << result->error_line_no << ":" << result->error_row_no;
+                break;
             case json_parse_error_allocator_failed:
-                err.assign("Malloc failed :(");
+                err << "Malloc failed :(";
+                break;
             case json_parse_error_unexpected_trailing_characters:
-                err.assign("Unexpected characters at end of file: " + Arg.str());
+                err << "Unexpected characters at end of file: " << Arg.str();
+                break;
             case json_parse_error_unknown:
-                err.assign("An unknown error occurred in file: " + Arg.str() +
-                " at " + result->error_line_no + ":" + result->error_row_no);
+                err << "An unknown error occurred in file: " << Arg.str() <<
+                " at " << result->error_line_no << ":" << result->error_row_no;
+                break;
         }
-        return O.error("An error occurred while parsing the JSON: \n"
-                       "    " + err + "\n");
+        err << "\n";
+        return O.error(err.str());
     }
+
+    //std::cout << (char*) json_write_pretty(json_root, NULL, NULL, NULL) << std::endl;
 
     if(json_type_object != json_root->type){
         return O.error("Top level of the parsed JSON should be an object\n");
     }
     json_object_t* object = (json_object_t*) (json_root->payload);
     if(5 != object->length){
-        return O.error("JSON object contains too " +
-            (5<object->length ? "many ": "few ") +
-            "name/value pairs\n");
+        std::stringstream err;
+        err << "Expected 5 name/value pairs, received " << object->length << ".\n";
+        return O.error(err.str());
     }
     auto* curr = object->start;
 
@@ -119,13 +137,13 @@ bool parseCCFG(llvm::cl::Option &O, llvm::StringRef Arg, CCFG_t &V){
                 if(!val){
                     return O.error("An unexpected error occurred while parsing\n");
                 }
-                if(!strcmp(tolower(name->string), "name")){
-                    V.name = malloc(((json_string_t*) val)->string_size);
+                if(!strcasecmp(name->string, "name")){
+                    V.name = (char*) malloc(((json_string_t*) val)->string_size);
                     memcpy(V.name, ((json_string_t*) val)->string,
                            ((json_string_t*) val)->string_size);
                     break;
                 }
-                if(!strcmp(tolower(name->string), "policy")){
+                if(!strcasecmp(name->string, "policy")){
                     V.pol = policyParse(((json_string_t*) val)->string);
                     if(255 == V.pol){
                         return O.error("An invalid cache replacement policy was entered\n");
@@ -138,7 +156,19 @@ bool parseCCFG(llvm::cl::Option &O, llvm::StringRef Arg, CCFG_t &V){
                 if(!val){
                     return O.error("An unexpected error occurred while parsing\n");
                 }
-                break;
+                if(!strcasecmp(name->string, "s")){
+                    V.s = atoi(((json_number_t*) val)->number);
+                    break;
+                }
+                if(!strcasecmp(name->string, "b")){
+                    V.b = atoi(((json_number_t*) val)->number);
+                    break;
+                }
+                if(!strcasecmp(name->string, "E")){
+                    V.E = atoi(((json_number_t*) val)->number);
+                    break;
+                }
+                return O.error("An unexpected name/value pair of type number was encountered\n");
             default:
                 return O.error("An invalid data type was encountered\n");
         }
@@ -163,16 +193,16 @@ void llvm::cl::parser<CCFG_t>::printOptionDiff(const llvm::cl::Option &O, CCFG_t
 }
 
 uint8_t policyParse(const char* policy){
-    if(!strcmp(tolower(policy), "lfu")){
+    if(!strcasecmp(policy, "lfu")){
         return lfu;
     }
-    if(!strcmp(tolower(policy), "lru")){
+    if(!strcasecmp(policy, "lru")){
         return lru;
     }
-    if(!strcmp(tolower(policy), "fifo")){
+    if(!strcasecmp(policy, "fifo")){
         return fifo;
     }
-    if(!strcmp(tolower(policy), "rand") || !strcmp(tolower(policy), "random")){
+    if(!strcasecmp(policy, "rand") || !strcasecmp(policy, "random")){
         return rnd;
     }
     return 255;
