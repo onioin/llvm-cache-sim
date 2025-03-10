@@ -21,10 +21,10 @@ enum EvictPol {
 };
 
 typedef struct CCFG {
-    uint8_t s;
-    uint8_t E;
-    uint8_t b;
-    uint8_t pol;
+    int* s;
+    int* E;
+    int* b;
+    int* pol;
     char* name;
 } CCFG_t;
 
@@ -48,11 +48,10 @@ public:
 
 bool llvm::cl::parser<CCFG_t>::parse(llvm::cl::Option &O, llvm::StringRef ArgName,
                                     llvm::StringRef Arg, CCFG_t &V){
-    std::cout << ArgName.str() << ": " << Arg.str() << std::endl;
     return parseCCFG(O, Arg, V);
 }
 
-uint8_t policyParse(const char* policy);
+int policyParse(const char* policy);
 
 bool parseCCFGList(){
     return false;
@@ -138,14 +137,16 @@ bool parseCCFG(llvm::cl::Option &O, llvm::StringRef Arg, CCFG_t &V){
                     return O.error("An unexpected error occurred while parsing\n");
                 }
                 if(!strcasecmp(name->string, "name")){
-                    V.name = (char*) malloc(((json_string_t*) val)->string_size);
+                    V.name = (char*) malloc(((json_string_t*) val)->string_size + 1);
                     memcpy(V.name, ((json_string_t*) val)->string,
                            ((json_string_t*) val)->string_size);
+                    V.name[((json_string_t*) val)->string_size] = 0;
                     break;
                 }
                 if(!strcasecmp(name->string, "policy")){
-                    V.pol = policyParse(((json_string_t*) val)->string);
-                    if(255 == V.pol){
+                    V.pol = (int*) malloc(1);
+                    *(V.pol) = policyParse(((json_string_t*) val)->string);
+                    if(255 == *V.pol){
                         return O.error("An invalid cache replacement policy was entered\n");
                     }
                     break;
@@ -157,15 +158,18 @@ bool parseCCFG(llvm::cl::Option &O, llvm::StringRef Arg, CCFG_t &V){
                     return O.error("An unexpected error occurred while parsing\n");
                 }
                 if(!strcasecmp(name->string, "s")){
-                    V.s = atoi(((json_number_t*) val)->number);
+                    V.s = (int*) malloc(4);
+                    *(V.s) = atoi(((json_number_t*) val)->number);
                     break;
                 }
                 if(!strcasecmp(name->string, "b")){
-                    V.b = atoi(((json_number_t*) val)->number);
+                    V.b = (int*) malloc(4);
+                    *(V.b) = atoi(((json_number_t*) val)->number);
                     break;
                 }
                 if(!strcasecmp(name->string, "E")){
-                    V.E = atoi(((json_number_t*) val)->number);
+                    V.E = (int*) malloc(4);
+                    *(V.E) = atoi(((json_number_t*) val)->number);
                     break;
                 }
                 return O.error("An unexpected name/value pair of type number was encountered\n");
@@ -192,18 +196,26 @@ void llvm::cl::parser<CCFG_t>::printOptionDiff(const llvm::cl::Option &O, CCFG_t
 
 }
 
-uint8_t policyParse(const char* policy){
+void CCFGPrint(std::ostream &OS, CCFG_t cfg){
+    OS << "Name: " << cfg.name << "\n";
+    OS << "Policy: " << *cfg.pol << "\n";
+    OS << "Set Bits: " << *cfg.s << "\n";
+    OS << "Block Bits: " << *cfg.b << "\n";
+    OS << "Associativity: " << *cfg.E << "\n\n";
+}
+
+int policyParse(const char* policy){
     if(!strcasecmp(policy, "lfu")){
-        return lfu;
+        return EvictPol::lfu;
     }
     if(!strcasecmp(policy, "lru")){
-        return lru;
+        return EvictPol::lru;
     }
     if(!strcasecmp(policy, "fifo")){
-        return fifo;
+        return EvictPol::fifo;
     }
     if(!strcasecmp(policy, "rand") || !strcasecmp(policy, "random")){
-        return rnd;
+        return EvictPol::rnd;
     }
     return 255;
 }
