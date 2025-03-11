@@ -197,10 +197,10 @@ void llvm::cl::parser<CCFG_t>::printOptionDiff(const llvm::cl::Option &O, CCFG_t
 
 void CCFGPrint(std::ostream &OS, CCFG_t cfg){
     OS << "Name: " << cfg.name << "\n";
-    OS << "Policy: " << *cfg.pol << "\n";
-    OS << "Set Bits: " << *cfg.s << "\n";
-    OS << "Block Bits: " << *cfg.b << "\n";
-    OS << "Associativity: " << *cfg.E << "\n\n";
+    OS << "Policy: " << cfg.pol << "\n";
+    OS << "Set Bits: " << cfg.s << "\n";
+    OS << "Block Bits: " << cfg.b << "\n";
+    OS << "Associativity: " << cfg.E << "\n\n";
 }
 
 #endif //CACHEPASS_CFGPARSER_H
