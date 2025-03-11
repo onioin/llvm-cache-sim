@@ -15,16 +15,11 @@
 //#include <iostream>
 #include <stdlib.h>
 
-//TODO: lift policy enum out of this file
-enum EvictPol {
-    lfu = 0, lru = 1, fifo = 2, rnd = 3
-};
-
 typedef struct CCFG {
     int* s;
     int* E;
     int* b;
-    int* pol;
+    char* pol;
     char* name;
 } CCFG_t;
 
@@ -51,7 +46,6 @@ bool llvm::cl::parser<CCFG_t>::parse(llvm::cl::Option &O, llvm::StringRef ArgNam
     return parseCCFG(O, Arg, V);
 }
 
-int policyParse(const char* policy);
 
 bool parseCCFGList(){
     return false;
@@ -144,11 +138,10 @@ bool parseCCFG(llvm::cl::Option &O, llvm::StringRef Arg, CCFG_t &V){
                     break;
                 }
                 if(!strcasecmp(name->string, "policy")){
-                    V.pol = (int*) malloc(1);
-                    *(V.pol) = policyParse(((json_string_t*) val)->string);
-                    if(255 == *V.pol){
-                        return O.error("An invalid cache replacement policy was entered\n");
-                    }
+                    V.pol = (char*) malloc(((json_string_t*) val)->string_size + 1);
+                    memcpy(V.pol, ((json_string_t*) val)->string,
+                           ((json_string_t*) val)->string_size);
+                    V.pol[((json_string_t*) val)->string_size] = 0;
                     break;
                 }
                 return O.error("An unexpected name/value pair of type string was encountered\n");
@@ -202,22 +195,6 @@ void CCFGPrint(std::ostream &OS, CCFG_t cfg){
     OS << "Set Bits: " << *cfg.s << "\n";
     OS << "Block Bits: " << *cfg.b << "\n";
     OS << "Associativity: " << *cfg.E << "\n\n";
-}
-
-int policyParse(const char* policy){
-    if(!strcasecmp(policy, "lfu")){
-        return EvictPol::lfu;
-    }
-    if(!strcasecmp(policy, "lru")){
-        return EvictPol::lru;
-    }
-    if(!strcasecmp(policy, "fifo")){
-        return EvictPol::fifo;
-    }
-    if(!strcasecmp(policy, "rand") || !strcasecmp(policy, "random")){
-        return EvictPol::rnd;
-    }
-    return 255;
 }
 
 #endif //CACHEPASS_CFGPARSER_H
