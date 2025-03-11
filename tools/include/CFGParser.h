@@ -131,19 +131,17 @@ bool parseCCFG(llvm::cl::Option &O, llvm::StringRef Arg, CCFG_t &V){
                     return O.error("An unexpected error occurred while parsing\n");
                 }
                 if(!strcasecmp(name->string, "name")){
-                    V.name = (char*) malloc(((json_string_t*) val)->string_size + 8);
-                    strncpy(V.name, "--name=", 8);
-                    memcpy(V.name+7, ((json_string_t*) val)->string,
+                    V.name = (char*) malloc(((json_string_t*) val)->string_size + 1);
+                    memcpy(V.name, ((json_string_t*) val)->string,
                            ((json_string_t*) val)->string_size);
-                    V.name[((json_string_t*) val)->string_size+7] = 0;
+                    V.name[((json_string_t*) val)->string_size] = 0;
                     break;
                 }
                 if(!strcasecmp(name->string, "policy")){
-                    V.pol = (char*) malloc(((json_string_t*) val)->string_size + 10);
-                    strncpy(V.pol, "--policy=", 10);
-                    memcpy(V.pol+9, ((json_string_t*) val)->string,
+                    V.pol = (char*) malloc(((json_string_t*) val)->string_size + 1);
+                    memcpy(V.pol, ((json_string_t*) val)->string,
                            ((json_string_t*) val)->string_size);
-                    V.pol[((json_string_t*) val)->string_size+9] = 0;
+                    V.pol[((json_string_t*) val)->string_size] = 0;
                     break;
                 }
                 return O.error("An unexpected name/value pair of type string was encountered\n");
