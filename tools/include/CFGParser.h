@@ -16,9 +16,9 @@
 #include <stdlib.h>
 
 typedef struct CCFG {
-    int* s;
-    int* E;
-    int* b;
+    char* s;
+    char* E;
+    char* b;
     char* pol;
     char* name;
 } CCFG_t;
@@ -151,18 +151,24 @@ bool parseCCFG(llvm::cl::Option &O, llvm::StringRef Arg, CCFG_t &V){
                     return O.error("An unexpected error occurred while parsing\n");
                 }
                 if(!strcasecmp(name->string, "s")){
-                    V.s = (int*) malloc(4);
-                    *(V.s) = atoi(((json_number_t*) val)->number);
+                    V.s = (char*) malloc(((json_number_t*) val)->number_size + 1);
+                    memcpy(V.s, ((json_number_t*) val)->number,
+                           ((json_number_t*) val)->number_size);
+                    V.s[((json_number_t*) val)->number_size] = 0;
                     break;
                 }
                 if(!strcasecmp(name->string, "b")){
-                    V.b = (int*) malloc(4);
-                    *(V.b) = atoi(((json_number_t*) val)->number);
+                    V.b = (char*) malloc(((json_number_t*) val)->number_size + 1);
+                    memcpy(V.b, ((json_number_t*) val)->number,
+                           ((json_number_t*) val)->number_size);
+                    V.b[((json_number_t*) val)->number_size] = 0;
                     break;
                 }
                 if(!strcasecmp(name->string, "E")){
-                    V.E = (int*) malloc(4);
-                    *(V.E) = atoi(((json_number_t*) val)->number);
+                    V.E = (char*) malloc(((json_number_t*) val)->number_size + 1);
+                    memcpy(V.E, ((json_number_t*) val)->number,
+                           ((json_number_t*) val)->number_size);
+                    V.E[((json_number_t*) val)->number_size] = 0;
                     break;
                 }
                 return O.error("An unexpected name/value pair of type number was encountered\n");
