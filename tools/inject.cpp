@@ -200,7 +200,8 @@ void compile(Module &M, StringRef outPath){
 
 void link(StringRef objFile, StringRef outFile){
     auto clang = llvm::sys::findProgramByName("clang++");
-    std::string opt("-O" + OptLevel);
+    std::string opt("-O");
+    opt += OptLevel;
     if(!clang){
         report_fatal_error("No clang :(");
     }

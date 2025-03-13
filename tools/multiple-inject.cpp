@@ -95,7 +95,10 @@ int main(int argc, char** argv){
         std::stringstream polOpt;
         polOpt << "--policy=" << cfg.pol;
 
-        std::vector<std::string> args{injector.get(), InPath.getValue(), "-o", oFile.str(),
+        std::stringstream optOpt;
+        optOpt << "-O" << OptLevel;
+
+        std::vector<std::string> args{injector.get(), InPath.getValue(), "-o", oFile.str(), optOpt.str(),
                                       "-E", cfg.E, "-b", cfg.b, "-s", cfg.s, nameOpt.str(), polOpt.str()};
 
         for(auto & libPath : LibPaths){
