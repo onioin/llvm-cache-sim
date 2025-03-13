@@ -8,7 +8,7 @@
 #include <string>
 #include <sstream>
 #include <vector>
-#include <iostream>
+//#include <iostream>
 
 /*
  * get config file off command line
@@ -85,7 +85,7 @@ int main(int argc, char** argv){
     }
 
     for(auto cfg : ConfigFiles) {
-        CCFGPrint(std::cout, cfg);
+        //CCFGPrint(std::cout, cfg);
 
         std::stringstream oFile;
         oFile << OutFile.getValue() << "-" << cfg.name << ".bin";
