@@ -47,10 +47,6 @@ bool llvm::cl::parser<CCFG_t>::parse(llvm::cl::Option &O, llvm::StringRef ArgNam
 }
 
 
-bool parseCCFGList(){
-    return false;
-}
-
 bool parseCCFG(llvm::cl::Option &O, llvm::StringRef Arg, CCFG_t &V){
     char* cfg_buf = readfile(Arg.str().c_str());
     auto* result = (json_parse_result_t*) malloc(sizeof(json_parse_result_t));
