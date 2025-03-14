@@ -14,80 +14,55 @@
 #include <sstream>
 //#include <iostream>
 #include <stdlib.h>
-#include <assert.h>
+//#include <assert.h>
 
 
 class CCFG_t{
 private:
-    char* s_;
-    char* E_;
-    char* b_;
-    char* pol_;
-    char* name_;
+    std::string s_;
+    std::string E_;
+    std::string b_;
+    std::string pol_;
+    std::string name_;
 public:
     enum field{
         s, E, b, pol, name
     };
-    CCFG_t() {s_ = nullptr; E_ = nullptr; b_ = nullptr; pol_ = nullptr; name_ = nullptr;}
-    ~CCFG_t() {
-        if(s_) delete s_;
-        if(E_) delete E_;
-        if(b_) delete b_;
-        if(pol_) delete pol_;
-        if(name_) delete name_;
-    }
+    CCFG_t() = default;
+    ~CCFG_t() = default;
     void setField(field which, const char* val, size_t bytes){
         switch(which){
             case s:
-                if(s_) delete s_;
-                s_ = (char*) malloc(bytes+1);
-                memcpy(s_, val, bytes);
-                s_[bytes] = 0; //just in case
+                s_.assign(val);
                 break;
             case E:
-                if(E_) delete E_;
-                E_ = (char*) malloc(bytes+1);
-                memcpy(E_, val, bytes);
-                E_[bytes] = 0;
+                E_.assign(val);
                 break;
             case b:
-                if(b_) delete b_;
-                b_ = (char*) malloc(bytes+1);
-                memcpy(b_, val, bytes);
-                b_[bytes] = 0;
+                b_.assign(val);
                 break;
             case pol:
-                if(pol_) delete pol_;
-                pol_ = (char*) malloc(bytes+1);
-                memcpy(pol_, val, bytes);
-                pol_[bytes] = 0;
+                pol_.assign(val);
                 break;
             case name:
-                if(name_) delete name_;
-                name_ = (char*) malloc(bytes+1);
-                memcpy(name_, val, bytes);
-                name_[bytes] = 0;
+                name_.assign(val);
                 break;
         }
     }
-    char* getField(field which){
+    std::string getField(field which){
         switch(which){
             case s:
-                assert(s_ && "Cannot get an empty field");
                 return s_;
             case E:
-                assert(E_ && "Cannot get an empty field");
                 return E_;
             case b:
-                assert(b_ && "Cannot get an empty field");
                 return b_;
             case pol:
-                assert(pol_ && "Cannot get an empty field");
                 return pol_;
             case name:
-                assert(name_ && "Cannot get an empty field");
                 return name_;
         }
+        return nullptr;
     }
 
 };
@@ -177,6 +152,7 @@ json_value_t* parseJSONRoot(llvm::cl::Option &O, llvm::StringRef Arg){
         err << "\n";
         throw err.str();
     }
+    free(result);
     free(cfg_buf);
     return json_root;
 }

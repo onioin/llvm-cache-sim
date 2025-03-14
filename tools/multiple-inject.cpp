@@ -2,6 +2,7 @@
 #include "llvm/Support/Program.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/CommandLine.h"
+#include "llvm/Support/ManagedStatic.h"
 
 #include "CFGParser.h"
 #include <stdlib.h>
@@ -64,6 +65,7 @@ cl::opt<CCFG_t> ConfigFile("C", cl::value_desc("cfg filename"),
 */
 
 int main(int argc, char** argv){
+    llvm_shutdown_obj shutdown;
     cl::HideUnrelatedOptions(optCat);
     cl::ParseCommandLineOptions(argc, argv, "Multiple Cache Simulator\n\n"
                                             "   This program allows the user to inject several different caches into "
@@ -84,22 +86,23 @@ int main(int argc, char** argv){
         report_fatal_error("Could not locate injector.");
     }
 
-    for(auto cfg : ConfigFiles) {
+    for(CCFG_t cfg : ConfigFiles) {
         //CCFGPrint(std::cout, cfg);
 
         std::stringstream oFile;
-        oFile << OutFile.getValue() << "-" << cfg.name << ".bin";
+        oFile << OutFile.getValue() << "-" << cfg.getField(CCFG_t::name) << ".bin";
 
         std::stringstream nameOpt;
-        nameOpt << "--name=" << cfg.name;
+        nameOpt << "--name=" << cfg.getField(CCFG_t::name);
         std::stringstream polOpt;
-        polOpt << "--policy=" << cfg.pol;
+        polOpt << "--policy=" << cfg.getField(CCFG_t::pol);
 
         std::stringstream optOpt;
         optOpt << "-O" << OptLevel;
 
         std::vector<std::string> args{injector.get(), InPath.getValue(), "-o", oFile.str(), optOpt.str(),
-                                      "-E", cfg.E, "-b", cfg.b, "-s", cfg.s, nameOpt.str(), polOpt.str()};
+                                      "-E", cfg.getField(CCFG_t::E), "-b", cfg.getField(CCFG_t::b),
+                                      "-s", cfg.getField(CCFG_t::s), nameOpt.str(), polOpt.str()};
 
         for(auto & libPath : LibPaths){
             args.push_back("-L" + libPath);
