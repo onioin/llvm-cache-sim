@@ -14,14 +14,83 @@
 #include <sstream>
 //#include <iostream>
 #include <stdlib.h>
+#include <assert.h>
 
-typedef struct CCFG {
-    char* s;
-    char* E;
-    char* b;
-    char* pol;
-    char* name;
-} CCFG_t;
+
+class CCFG_t{
+private:
+    char* s_;
+    char* E_;
+    char* b_;
+    char* pol_;
+    char* name_;
+public:
+    enum field{
+        s, E, b, pol, name
+    };
+    CCFG_t() {s_ = nullptr; E_ = nullptr; b_ = nullptr; pol_ = nullptr; name_ = nullptr;}
+    ~CCFG_t() {
+        if(s_) delete s_;
+        if(E_) delete E_;
+        if(b_) delete b_;
+        if(pol_) delete pol_;
+        if(name_) delete name_;
+    }
+    void setField(field which, const char* val, size_t bytes){
+        switch(which){
+            case s:
+                if(s_) delete s_;
+                s_ = (char*) malloc(bytes+1);
+                memcpy(s_, val, bytes);
+                s_[bytes] = 0; //just in case
+                break;
+            case E:
+                if(E_) delete E_;
+                E_ = (char*) malloc(bytes+1);
+                memcpy(E_, val, bytes);
+                E_[bytes] = 0;
+                break;
+            case b:
+                if(b_) delete b_;
+                b_ = (char*) malloc(bytes+1);
+                memcpy(b_, val, bytes);
+                b_[bytes] = 0;
+                break;
+            case pol:
+                if(pol_) delete pol_;
+                pol_ = (char*) malloc(bytes+1);
+                memcpy(pol_, val, bytes);
+                pol_[bytes] = 0;
+                break;
+            case name:
+                if(name_) delete name_;
+                name_ = (char*) malloc(bytes+1);
+                memcpy(name_, val, bytes);
+                name_[bytes] = 0;
+                break;
+        }
+    }
+    char* getField(field which){
+        switch(which){
+            case s:
+                assert(s_ && "Cannot get an empty field");
+                return s_;
+            case E:
+                assert(E_ && "Cannot get an empty field");
+                return E_;
+            case b:
+                assert(b_ && "Cannot get an empty field");
+                return b_;
+            case pol:
+                assert(pol_ && "Cannot get an empty field");
+                return pol_;
+            case name:
+                assert(name_ && "Cannot get an empty field");
+                return name_;
+        }
+    }
+
+};
 
 json_value_t* parseJSONRoot(llvm::cl::Option&, llvm::StringRef);
 bool parseCCFG(llvm::cl::Option&, json_value_t*, CCFG_t&);
@@ -106,7 +175,6 @@ json_value_t* parseJSONRoot(llvm::cl::Option &O, llvm::StringRef Arg){
                 break;
         }
         err << "\n";
-        //
         throw err.str();
     }
     free(cfg_buf);
@@ -139,17 +207,15 @@ bool parseCCFG(llvm::cl::Option &O, json_value_t* json_root, CCFG_t &V){
                     return O.error("An unexpected error occurred while parsing\n");
                 }
                 if(!strcasecmp(name->string, "name")){
-                    V.name = (char*) malloc(((json_string_t*) val)->string_size + 1);
-                    memcpy(V.name, ((json_string_t*) val)->string,
-                           ((json_string_t*) val)->string_size);
-                    V.name[((json_string_t*) val)->string_size] = 0;
+                    V.setField(CCFG_t::name,
+                               ((json_string_t*) val)->string,
+                               ((json_string_t*) val)->string_size);
                     break;
                 }
                 if(!strcasecmp(name->string, "policy")){
-                    V.pol = (char*) malloc(((json_string_t*) val)->string_size + 1);
-                    memcpy(V.pol, ((json_string_t*) val)->string,
-                           ((json_string_t*) val)->string_size);
-                    V.pol[((json_string_t*) val)->string_size] = 0;
+                    V.setField(CCFG_t::pol,
+                               ((json_string_t*) val)->string,
+                               ((json_string_t*) val)->string_size);
                     break;
                 }
                 return O.error("An unexpected name/value pair of type string was encountered\n");
@@ -159,24 +225,21 @@ bool parseCCFG(llvm::cl::Option &O, json_value_t* json_root, CCFG_t &V){
                     return O.error("An unexpected error occurred while parsing\n");
                 }
                 if(!strcasecmp(name->string, "s")){
-                    V.s = (char*) malloc(((json_number_t*) val)->number_size + 1);
-                    memcpy(V.s, ((json_number_t*) val)->number,
-                           ((json_number_t*) val)->number_size);
-                    V.s[((json_number_t*) val)->number_size] = 0;
+                    V.setField(CCFG_t::s,
+                               ((json_number_t*) val)->number,
+                               ((json_number_t*) val)->number_size);
                     break;
                 }
                 if(!strcasecmp(name->string, "b")){
-                    V.b = (char*) malloc(((json_number_t*) val)->number_size + 1);
-                    memcpy(V.b, ((json_number_t*) val)->number,
-                           ((json_number_t*) val)->number_size);
-                    V.b[((json_number_t*) val)->number_size] = 0;
+                    V.setField(CCFG_t::b,
+                               ((json_number_t*) val)->number,
+                               ((json_number_t*) val)->number_size);
                     break;
                 }
                 if(!strcasecmp(name->string, "E")){
-                    V.E = (char*) malloc(((json_number_t*) val)->number_size + 1);
-                    memcpy(V.E, ((json_number_t*) val)->number,
-                           ((json_number_t*) val)->number_size);
-                    V.E[((json_number_t*) val)->number_size] = 0;
+                    V.setField(CCFG_t::E,
+                               ((json_number_t*) val)->number,
+                               ((json_number_t*) val)->number_size);
                     break;
                 }
                 return O.error("An unexpected name/value pair of type number was encountered\n");
@@ -203,11 +266,11 @@ void llvm::cl::parser<CCFG_t>::printOptionDiff(const llvm::cl::Option &O, CCFG_t
 }
 
 void CCFGPrint(std::ostream &OS, CCFG_t cfg){
-    OS << "Name: " << cfg.name << "\n";
-    OS << "Policy: " << cfg.pol << "\n";
-    OS << "Set Bits: " << cfg.s << "\n";
-    OS << "Block Bits: " << cfg.b << "\n";
-    OS << "Associativity: " << cfg.E << "\n\n";
+    OS << "Name: " << cfg.getField(CCFG_t::name) << "\n";
+    OS << "Policy: " << cfg.getField(CCFG_t::pol) << "\n";
+    OS << "Set Bits: " << cfg.getField(CCFG_t::s) << "\n";
+    OS << "Block Bits: " << cfg.getField(CCFG_t::b) << "\n";
+    OS << "Associativity: " << cfg.getField(CCFG_t::E) << "\n\n";
 }
 
 #endif //CACHEPASS_CFGPARSER_H
