@@ -23,7 +23,7 @@ typedef struct CCFG {
     char* name;
 } CCFG_t;
 
-json_value_t* parseCCFGRoot(llvm::cl::Option&, llvm::StringRef)
+json_value_t* parseJSONRoot(llvm::cl::Option&, llvm::StringRef);
 bool parseCCFG(llvm::cl::Option&, json_value_t*, CCFG_t&);
 
 template <> class llvm::cl::parser<CCFG_t> : public basic_parser<CCFG_t>{
@@ -44,11 +44,16 @@ public:
 
 bool llvm::cl::parser<CCFG_t>::parse(llvm::cl::Option &O, llvm::StringRef ArgName,
                                     llvm::StringRef Arg, CCFG_t &V){
-    json_value_t* root = parseCCFGRoot(O, Arg);
-    return parseCCFG(O, root, V);
+    try {
+        json_value_t* root = parseJSONRoot(O, Arg);
+        return parseCCFG(O, root, V);
+    }
+    catch (std::string err){
+        return O.error(err);
+    }
 }
 
-json_value_t* parseCCFGRoot(llvm::cl::Option &O, llvm::StringRef Arg){
+json_value_t* parseJSONRoot(llvm::cl::Option &O, llvm::StringRef Arg){
     char* cfg_buf = readfile(Arg.str().c_str());
     auto* result = (json_parse_result_t*) malloc(sizeof(json_parse_result_t));
     json_value_t* json_root =
@@ -101,8 +106,10 @@ json_value_t* parseCCFGRoot(llvm::cl::Option &O, llvm::StringRef Arg){
                 break;
         }
         err << "\n";
-        return O.error(err.str());
+        //
+        throw err.str();
     }
+    free(cfg_buf);
     return json_root;
 }
 
@@ -180,7 +187,6 @@ bool parseCCFG(llvm::cl::Option &O, json_value_t* json_root, CCFG_t &V){
         curr = curr->next;
     }
 
-    free(cfg_buf);
     free(json_root);
     return false;
 }
