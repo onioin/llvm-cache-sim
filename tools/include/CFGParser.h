@@ -34,18 +34,23 @@ public:
         switch(which){
             case s:
                 s_.assign(val, bytes);
+                s_.append("\0"); //just in case
                 break;
             case E:
                 E_.assign(val, bytes);
+                E_.append("\0");
                 break;
             case b:
                 b_.assign(val, bytes);
+                b_.append("\0");
                 break;
             case pol:
                 pol_.assign(val, bytes);
+                pol_.append("\0");
                 break;
             case name:
                 name_.assign(val, bytes);
+                name_.append("\0");
                 break;
         }
     }
@@ -90,7 +95,9 @@ bool llvm::cl::parser<CCFG_t>::parse(llvm::cl::Option &O, llvm::StringRef ArgNam
                                     llvm::StringRef Arg, CCFG_t &V){
     try {
         json_value_t* root = parseJSONRoot(O, Arg);
-        return parseCCFG(O, root, V);
+        bool ret = parseCCFG(O, root, V);
+        free(root);
+        return ret;
     }
     catch (std::string err){
         return O.error(err);
@@ -226,7 +233,6 @@ bool parseCCFG(llvm::cl::Option &O, json_value_t* json_root, CCFG_t &V){
         curr = curr->next;
     }
 
-    free(json_root);
     return false;
 }
 
