@@ -33,19 +33,19 @@ public:
     void setField(field which, const char* val, size_t bytes){
         switch(which){
             case s:
-                s_.assign(val);
+                s_.assign(val, bytes);
                 break;
             case E:
-                E_.assign(val);
+                E_.assign(val, bytes);
                 break;
             case b:
-                b_.assign(val);
+                b_.assign(val, bytes);
                 break;
             case pol:
-                pol_.assign(val);
+                pol_.assign(val, bytes);
                 break;
             case name:
-                name_.assign(val);
+                name_.assign(val, bytes);
                 break;
         }
     }
