@@ -23,7 +23,8 @@ typedef struct CCFG {
     char* name;
 } CCFG_t;
 
-bool parseCCFG(llvm::cl::Option &O, llvm::StringRef Arg, CCFG_t &V);
+json_value_t* parseCCFGRoot(llvm::cl::Option&, llvm::StringRef)
+bool parseCCFG(llvm::cl::Option&, json_value_t*, CCFG_t&);
 
 template <> class llvm::cl::parser<CCFG_t> : public basic_parser<CCFG_t>{
 public:
@@ -43,11 +44,11 @@ public:
 
 bool llvm::cl::parser<CCFG_t>::parse(llvm::cl::Option &O, llvm::StringRef ArgName,
                                     llvm::StringRef Arg, CCFG_t &V){
-    return parseCCFG(O, Arg, V);
+    json_value_t* root = parseCCFGRoot(O, Arg);
+    return parseCCFG(O, root, V);
 }
 
-
-bool parseCCFG(llvm::cl::Option &O, llvm::StringRef Arg, CCFG_t &V){
+json_value_t* parseCCFGRoot(llvm::cl::Option &O, llvm::StringRef Arg){
     char* cfg_buf = readfile(Arg.str().c_str());
     auto* result = (json_parse_result_t*) malloc(sizeof(json_parse_result_t));
     json_value_t* json_root =
@@ -59,34 +60,34 @@ bool parseCCFG(llvm::cl::Option &O, llvm::StringRef Arg, CCFG_t &V){
         switch(result->error){
             case json_parse_error_expected_comma_or_closing_bracket:
                 err << "Expected a comma or a closing '}' or ']' in file: " << Arg.str() <<
-                " at " << result->error_line_no << ":" << result->error_row_no;
+                    " at " << result->error_line_no << ":" << result->error_row_no;
                 break;
             case json_parse_error_expected_colon:
                 err << "Expected a colon to separate a name/value pair in file: " << Arg.str() <<
-                " at " << result->error_line_no << ":" << result->error_row_no;
+                    " at " << result->error_line_no << ":" << result->error_row_no;
                 break;
             case json_parse_error_expected_opening_quote:
                 err << "Expected string to begin with '\"' in file: " << Arg.str() <<
-                " at " << result->error_line_no << ":" << result->error_row_no;
+                    " at " << result->error_line_no << ":" << result->error_row_no;
                 break;
             case json_parse_error_invalid_string_escape_sequence:
                 err << "Invalid escape sequence in file: " << Arg.str() <<
-                " at " << result->error_line_no << ":" << result->error_row_no;
+                    " at " << result->error_line_no << ":" << result->error_row_no;
                 break;
             case json_parse_error_invalid_number_format:
                 err << "Invalid number format in file: " << Arg.str() <<
-                " at " << result->error_line_no << ":" << result->error_row_no;
+                    " at " << result->error_line_no << ":" << result->error_row_no;
                 break;
             case json_parse_error_invalid_value:
                 err << "Invalid value in file: " << Arg.str() <<
-                " at " << result->error_line_no << ":" << result->error_row_no;
+                    " at " << result->error_line_no << ":" << result->error_row_no;
                 break;
             case json_parse_error_premature_end_of_buffer:
                 err << "File: " << Arg.str() << " ended before expected";
                 break;
             case json_parse_error_invalid_string:
                 err << "Malformed string in file: " + Arg.str() << Arg.str() <<
-                " at " << result->error_line_no << ":" << result->error_row_no;
+                    " at " << result->error_line_no << ":" << result->error_row_no;
                 break;
             case json_parse_error_allocator_failed:
                 err << "Malloc failed :(";
@@ -96,13 +97,17 @@ bool parseCCFG(llvm::cl::Option &O, llvm::StringRef Arg, CCFG_t &V){
                 break;
             case json_parse_error_unknown:
                 err << "An unknown error occurred in file: " << Arg.str() <<
-                " at " << result->error_line_no << ":" << result->error_row_no;
+                    " at " << result->error_line_no << ":" << result->error_row_no;
                 break;
         }
         err << "\n";
         return O.error(err.str());
     }
+    return json_root;
+}
 
+
+bool parseCCFG(llvm::cl::Option &O, json_value_t* json_root, CCFG_t &V){
     //std::cout << (char*) json_write_pretty(json_root, NULL, NULL, NULL) << std::endl;
 
     if(json_type_object != json_root->type){
