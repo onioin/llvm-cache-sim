@@ -8,6 +8,7 @@
 #include <iterator>
 #include <assert.h>
 #include <cstddef>
+#include <type_traits>
 #include <iostream>
 
 namespace osl {
@@ -24,6 +25,12 @@ namespace osl {
                 data = val;
                 next = nullptr;
                 prev = nullptr;
+            }
+
+            ~Node(){
+                if constexpr(std::is_pointer_v<T>){
+                    delete data;
+                }
             }
         };
 
