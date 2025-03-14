@@ -73,7 +73,7 @@ namespace osl {
         }
 
     public:
-        class iterator : public std::iterator<std::bidirectional_iterator_tag, T> {
+        class iterator : public std::iterator<std::forward_iterator_tag, T> {
         private:
             Node *curr;
         public:
@@ -92,30 +92,18 @@ namespace osl {
                 return ret;
             }
 
-            iterator &operator--(){
-                curr = curr->prev;
-                return *this;
-            }
-
-            iterator operator--(int){
-                iterator ret = *this;
-                --(*this);
-                return ret;
-            }
-
             bool operator==(iterator other) const {
-                return (this->curr == other.curr) || ((this->curr->data == other.curr->data) &&
-                                                      (this->curr->next == other.curr->next));
+                return (this->curr == other.curr);
             }
 
             bool operator!=(iterator other) const { return !(*this == other); };
 
             typename std::iterator<std::forward_iterator_tag, T>::reference operator*() const { return curr->data; }
         };
-
+    public:
         iterator begin() { return iterator(head); }
 
-        iterator end() { return iterator(tail); };
+        iterator end() { return iterator(nullptr); };
 
     };
 
