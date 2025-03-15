@@ -4,12 +4,14 @@
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/ManagedStatic.h"
 
+#include "LinkedList.h"
+#include "CFGListParser.h"
 #include "CFGParser.h"
 #include <stdlib.h>
 #include <string>
 #include <sstream>
 #include <vector>
-//#include <iostream>
+#include <iostream>
 
 /*
  * get config file off command line
@@ -26,6 +28,8 @@
 //TODO: use -c for individual configs, -C for config including multiple configs
 
 using namespace llvm;
+
+void inject(CCFG_t cfg, std::string injector);
 
 cl::OptionCategory optCat{"Multiple Cache Injector Options"};
 
@@ -58,11 +62,11 @@ cl::list<std::string> LibNames("l", cl::Prefix,
 cl::list<CCFG_t> ConfigFiles("c", cl::value_desc("cfg filename"),
                             cl::desc("A cache config file to be run"),
                             cl::cat(optCat));
-/*
-cl::opt<CCFG_t> ConfigFile("C", cl::value_desc("cfg filename"),
-                          cl::desc("A single file containing a list of configs to be run"),
-                          cl::cat(optCat));
-*/
+
+cl::opt<osl::LinkedList<CCFG_t*>*> ConfigFile("C", cl::value_desc("cfg filename"),
+                                             cl::desc("A single file containing a list of configs to be run"),
+                                             cl::cat(optCat));
+
 
 int main(int argc, char** argv){
     llvm_shutdown_obj shutdown;
@@ -88,48 +92,53 @@ int main(int argc, char** argv){
 
     for(CCFG_t cfg : ConfigFiles) {
         //CCFGPrint(std::cout, cfg);
+        inject(cfg, injector.get());
+    }
 
-        std::stringstream oFile;
-        oFile << OutFile.getValue() << "-" << cfg.getField(CCFG_t::name) << ".bin";
-
-        std::stringstream nameOpt;
-        nameOpt << "--name=" << cfg.getField(CCFG_t::name);
-        std::stringstream polOpt;
-        polOpt << "--policy=" << cfg.getField(CCFG_t::pol);
-
-        std::stringstream optOpt;
-        optOpt << "-O" << OptLevel;
-
-        std::vector<std::string> args{injector.get(), InPath.getValue(), "-o", oFile.str(), optOpt.str(),
-                                      "-E", cfg.getField(CCFG_t::E), "-b", cfg.getField(CCFG_t::b),
-                                      "-s", cfg.getField(CCFG_t::s), nameOpt.str(), polOpt.str()};
-
-        for(auto & libPath : LibPaths){
-            args.push_back("-L" + libPath);
-        }
-        for(auto & lib : LibNames){
-            args.push_back("-l" + lib);
-        }
-
-        std::vector<llvm::StringRef> charArgs;
-        charArgs.reserve(args.size());
-
-        for(auto & arg : args){
-            charArgs.emplace_back(arg);
-        }
-        for(auto & arg : args){
-            outs() << arg.c_str() << " ";
-        }
-        outs() << "\n";
-
-        auto res = llvm::sys::ExecuteAndWait(injector.get(), charArgs);
-
-        if(-1 == res){
-            report_fatal_error("Injector failed");
-        }
-
-
+    for(CCFG_t* cfg: *ConfigFile){
+        inject(*cfg, injector.get());
     }
 
     exit(EXIT_SUCCESS);
+}
+
+void inject(CCFG_t cfg, std::string injector){
+    std::stringstream oFile;
+    oFile << OutFile.getValue() << "-" << cfg.getField(CCFG_t::name) << ".bin";
+
+    std::stringstream nameOpt;
+    nameOpt << "--name=" << cfg.getField(CCFG_t::name);
+    std::stringstream polOpt;
+    polOpt << "--policy=" << cfg.getField(CCFG_t::pol);
+
+    std::stringstream optOpt;
+    optOpt << "-O" << OptLevel;
+
+    std::vector<std::string> args{injector, InPath.getValue(), "-o", oFile.str(), optOpt.str(),
+                                  "-E", cfg.getField(CCFG_t::E), "-b", cfg.getField(CCFG_t::b),
+                                  "-s", cfg.getField(CCFG_t::s), nameOpt.str(), polOpt.str()};
+
+    for(auto & libPath : LibPaths){
+        args.push_back("-L" + libPath);
+    }
+    for(auto & lib : LibNames){
+        args.push_back("-l" + lib);
+    }
+
+    std::vector<llvm::StringRef> charArgs;
+    charArgs.reserve(args.size());
+
+    for(auto & arg : args){
+        charArgs.emplace_back(arg);
+    }
+    for(auto & arg : args){
+        outs() << arg.c_str() << " ";
+    }
+    outs() << "\n";
+
+    auto res = llvm::sys::ExecuteAndWait(injector, charArgs);
+
+    if(-1 == res){
+        report_fatal_error("Injector failed");
+    }
 }
