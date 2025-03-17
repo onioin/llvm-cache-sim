@@ -43,5 +43,6 @@ Tool Options
 -L <directory>   - Specify library search paths
 ```
 ## Acknowledgements
-This project uses code from [llvm-tutor](https://github.com/banach-space/llvm-tutor/tree/main)
-and [llvm-demo](https://github.com/nsumner/llvm-demo/tree/master)
+This project uses code from [llvm-tutor](https://github.com/banach-space/llvm-tutor/tree/main),
+[llvm-demo](https://github.com/nsumner/llvm-demo/tree/master),
+and [json.h](https://github.com/sheredom/json.h/blob/master/json.h)
